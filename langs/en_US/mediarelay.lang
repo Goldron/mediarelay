@@ -1,0 +1,41 @@
+# Copyright (C) 2026 SuperAdmin <info@siladel.fr>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+#
+# Generic
+#
+
+# Module label 'ModuleMediarelayName'
+ModuleMediarelayName = MediaRelay
+# Module description 'ModuleMediarelayDesc'
+ModuleMediarelayDesc = Relays images inserted in product/service descriptions to an OpenMage store
+MediaRelayDescription = Relays images inserted in product/service descriptions to an OpenMage store
+MediaRelayDescriptionLong = MediaRelay adds an Image button to the CKEditor used on the product and service description fields. Images uploaded or picked from that editor are not stored in Dolibarr: they are relayed to the media library (media/wysiwyg) of an OpenMage/Magento 1 store, through a dedicated admin account, because no OpenMage REST/SOAP API handles image upload without attaching it to a product. Setup: Home > Setup > Modules > MediaRelay (store URL, dedicated admin username and password).
+
+#
+# Admin pages
+#
+MediaRelaySetup = MediaRelay setup
+MediaRelaySetupPage = This is the setup page for the MediaRelay module.
+MediaRelayAbout = About MediaRelay
+MEDIARELAY_ADMIN_URL = OpenMage store URL
+MEDIARELAY_ADMIN_URLTooltip = Base URL of the OpenMage/Magento1 store (e.g. https://myshop.com), no trailing slash
+MEDIARELAY_ADMIN_USER = OpenMage admin username
+MEDIARELAY_ADMIN_USERTooltip = OpenMage admin account dedicated to this integration (System > Permissions > All Users), with access to Content > Design Media
+MEDIARELAY_ADMIN_PASSWORD = OpenMage admin password
+MEDIARELAY_ADMIN_PASSWORDTooltip = Password of the account above. Stored in plain text like the rest of the module's configuration.
+MediaRelayBrowserTitle = Store images
+MediaRelayListNotConfigured = Connection to OpenMage not configured yet (Setup > Modules > MediaRelay).
+MediaRelayNoFile = No image found in media/wysiwyg on the store.
