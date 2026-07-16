@@ -187,8 +187,15 @@ class MediarelayOpenmageClient
 	/**
 	 * Create the configured subfolder under media/wysiwyg/ if it doesn't already exist.
 	 *
+	 * Not fatal on failure: the most common failure is the folder already
+	 * existing (expected on every call after the first), and OpenMage's
+	 * error message for that is localized (e.g. French "Il existe déjà un
+	 * répertoire portant le même nom."), so it can't be matched reliably by
+	 * text. Any other real problem (invalid name, permissions) will surface
+	 * on its own when primeSession() below fails to actually enter the
+	 * folder and silently falls back to the media/wysiwyg root.
+	 *
 	 * @return void
-	 * @throws MediarelayOpenmageClientException
 	 */
 	private function ensureFolderExists()
 	{
@@ -203,10 +210,7 @@ class MediarelayOpenmageClient
 		$result = json_decode($response, true);
 
 		if (is_array($result) && !empty($result['error'])) {
-			$message = (string) ($result['message'] ?? '');
-			if (strpos($message, 'already exists') === false) {
-				throw new MediarelayOpenmageClientException('OpenMage folder creation failed: '.$message);
-			}
+			dol_syslog('mediarelay: OpenMage newFolder for "'.$this->folder.'" reported: '.(string) ($result['message'] ?? ''), LOG_DEBUG);
 		}
 	}
 
