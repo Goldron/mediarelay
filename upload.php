@@ -26,6 +26,7 @@ require_once __DIR__.'/lib/mediarelay.openmageclient.class.php';
 $REMOTE_ADMIN_URL      = getDolGlobalString('MEDIARELAY_ADMIN_URL');
 $REMOTE_ADMIN_USER     = getDolGlobalString('MEDIARELAY_ADMIN_USER');
 $REMOTE_ADMIN_PASSWORD = getDolGlobalString('MEDIARELAY_ADMIN_PASSWORD');
+$REMOTE_ADMIN_FOLDER   = getDolGlobalString('MEDIARELAY_ADMIN_FOLDER');
 $MAX_SIZE              = 10 * 1024 * 1024; // 10 Mo
 $ALLOWED_MIMES         = array('image/jpeg', 'image/png', 'image/gif', 'image/webp');
 // ---------------------------------------------------------------------------
@@ -111,7 +112,7 @@ $finalName = $safeName.'-'.dol_print_date(dol_now(), '%Y%m%d%H%M%S').'-'.substr(
 // --- Envoi vers OpenMage ------------------------------------------
 
 try {
-	$client = new MediarelayOpenmageClient($REMOTE_ADMIN_URL, $REMOTE_ADMIN_USER, $REMOTE_ADMIN_PASSWORD);
+	$client = new MediarelayOpenmageClient($REMOTE_ADMIN_URL, $REMOTE_ADMIN_USER, $REMOTE_ADMIN_PASSWORD, $REMOTE_ADMIN_FOLDER);
 	$publicUrl = $client->uploadImage($file['tmp_name'], $finalName, $mime);
 } catch (MediarelayOpenmageClientException $e) {
 	dol_syslog('mediarelay/upload.php: '.$e->getMessage(), LOG_ERR);

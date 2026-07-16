@@ -29,6 +29,7 @@ $langs->loadLangs(array("mediarelay@mediarelay"));
 $REMOTE_ADMIN_URL      = getDolGlobalString('MEDIARELAY_ADMIN_URL');
 $REMOTE_ADMIN_USER     = getDolGlobalString('MEDIARELAY_ADMIN_USER');
 $REMOTE_ADMIN_PASSWORD = getDolGlobalString('MEDIARELAY_ADMIN_PASSWORD');
+$REMOTE_ADMIN_FOLDER   = getDolGlobalString('MEDIARELAY_ADMIN_FOLDER');
 // ---------------------------------------------------------------------------
 
 // --- Contrôles de sécurité -------------------------------------------------
@@ -45,7 +46,7 @@ $funcNum = GETPOST('CKEditorFuncNum', 'int');
 $files = array();
 if (!empty($REMOTE_ADMIN_URL) && !empty($REMOTE_ADMIN_USER) && !empty($REMOTE_ADMIN_PASSWORD)) {
 	try {
-		$client = new MediarelayOpenmageClient($REMOTE_ADMIN_URL, $REMOTE_ADMIN_USER, $REMOTE_ADMIN_PASSWORD);
+		$client = new MediarelayOpenmageClient($REMOTE_ADMIN_URL, $REMOTE_ADMIN_USER, $REMOTE_ADMIN_PASSWORD, $REMOTE_ADMIN_FOLDER);
 		$files = $client->listImages();
 	} catch (MediarelayOpenmageClientException $e) {
 		dol_syslog('mediarelay/browser.php: '.$e->getMessage(), LOG_ERR);

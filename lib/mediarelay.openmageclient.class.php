@@ -44,6 +44,11 @@ class MediarelayOpenmageClient
 	private $password;
 
 	/**
+	 * @var string Subfolder of media/wysiwyg/ to store/list images in (no leading/trailing slash), '' for the root
+	 */
+	private $folder;
+
+	/**
 	 * @var resource|\CurlHandle|null Shared curl handle (keeps the session cookie across calls)
 	 */
 	private $ch;
@@ -59,9 +64,9 @@ class MediarelayOpenmageClient
 	private $formKey;
 
 	/**
-	 * @var bool Whether the wysiwyg storage session current path has been primed to the media/wysiwyg root
+	 * @var string|null HTML listing of $folder, fetched once the storage session is primed on that folder
 	 */
-	private $primed = false;
+	private $primedHtml;
 
 	/**
 	 * Constructor
@@ -69,12 +74,14 @@ class MediarelayOpenmageClient
 	 * @param string $baseUrl  OpenMage store base URL (e.g. https://shop.example.com)
 	 * @param string $username Dedicated admin backend username
 	 * @param string $password Dedicated admin backend password
+	 * @param string $folder   Subfolder of media/wysiwyg/ to use (e.g. "uploads"), '' for the root
 	 */
-	public function __construct($baseUrl, $username, $password)
+	public function __construct($baseUrl, $username, $password, $folder = '')
 	{
 		$this->baseUrl = rtrim($baseUrl, '/');
 		$this->username = $username;
 		$this->password = $password;
+		$this->folder = trim($folder, '/');
 	}
 
 	/**
@@ -88,8 +95,7 @@ class MediarelayOpenmageClient
 	 */
 	public function uploadImage($tmpPath, $fileName, $mime)
 	{
-		$this->ensureLogin();
-		$this->primeSession();
+		$this->ensureReady();
 
 		$postFields = array(
 			'image' => new CURLFile($tmpPath, $mime, $fileName),
@@ -104,22 +110,21 @@ class MediarelayOpenmageClient
 			throw new MediarelayOpenmageClientException('OpenMage upload failed: '.$message);
 		}
 
-		return $this->baseUrl.'/media/wysiwyg/'.rawurlencode($result['file']);
+		return $this->baseUrl.'/media/wysiwyg/'.$this->urlPathPrefix().rawurlencode($result['file']);
 	}
 
 	/**
-	 * List images already present in media/wysiwyg/ (root folder only).
+	 * List images already present in the configured media/wysiwyg/ subfolder.
 	 *
 	 * @return array<int,array{url:string,name:string,thumbnail:string}>
 	 * @throws MediarelayOpenmageClientException
 	 */
 	public function listImages()
 	{
-		$this->ensureLogin();
-		$html = $this->primeSession();
+		$this->ensureReady();
 
 		$files = array();
-		if (preg_match_all('/<div class="filecnt".*?<\/div>/s', $html, $blocks)) {
+		if (preg_match_all('/<div class="filecnt".*?<\/div>/s', $this->primedHtml, $blocks)) {
 			foreach ($blocks[0] as $block) {
 				$name = null;
 				if (preg_match('/<img[^>]*alt="([^"]*)"/', $block, $m)) {
@@ -132,7 +137,7 @@ class MediarelayOpenmageClient
 					continue;
 				}
 
-				$url = $this->baseUrl.'/media/wysiwyg/'.rawurlencode($name);
+				$url = $this->baseUrl.'/media/wysiwyg/'.$this->urlPathPrefix().rawurlencode($name);
 				$files[] = array(
 					'url' => $url,
 					'name' => $name,
@@ -145,6 +150,76 @@ class MediarelayOpenmageClient
 		}
 
 		return $files;
+	}
+
+	/**
+	 * @return string $this->folder followed by a slash, or '' if using the media/wysiwyg root
+	 */
+	private function urlPathPrefix()
+	{
+		return $this->folder === '' ? '' : $this->folder.'/';
+	}
+
+	/**
+	 * Log in if needed, make sure the target folder exists, and prime the
+	 * wysiwyg storage session on it. Safe to call on every request: each
+	 * step is skipped once already done on this client instance.
+	 *
+	 * @return void
+	 * @throws MediarelayOpenmageClientException
+	 */
+	private function ensureReady()
+	{
+		$this->ensureLogin();
+
+		if ($this->primedHtml !== null) {
+			return;
+		}
+
+		if ($this->folder !== '') {
+			$this->ensureFolderExists();
+			$this->primedHtml = $this->primeSession($this->idEncode('/'.$this->folder));
+		} else {
+			$this->primedHtml = $this->primeSession();
+		}
+	}
+
+	/**
+	 * Create the configured subfolder under media/wysiwyg/ if it doesn't already exist.
+	 *
+	 * @return void
+	 * @throws MediarelayOpenmageClientException
+	 */
+	private function ensureFolderExists()
+	{
+		// Point the storage session at the root first: newFolder creates
+		// inside whatever path was last saved to the session.
+		$this->primeSession();
+
+		$response = $this->request('POST', '/admin/cms_wysiwyg_images/newFolder?type=image', array(
+			'name' => $this->folder,
+			'form_key' => $this->formKey,
+		));
+		$result = json_decode($response, true);
+
+		if (is_array($result) && !empty($result['error'])) {
+			$message = (string) ($result['message'] ?? '');
+			if (strpos($message, 'already exists') === false) {
+				throw new MediarelayOpenmageClientException('OpenMage folder creation failed: '.$message);
+			}
+		}
+	}
+
+	/**
+	 * Replicates Mage_Cms_Helper_Wysiwyg_Images::idEncode() so we can point
+	 * the "node" (folder) parameter at our configured subfolder.
+	 *
+	 * @param string $path
+	 * @return string
+	 */
+	private function idEncode($path)
+	{
+		return strtr(base64_encode($path), '+/=', ':_-');
 	}
 
 	/**
@@ -197,22 +272,27 @@ class MediarelayOpenmageClient
 	}
 
 	/**
-	 * Point the wysiwyg storage session at the media/wysiwyg root and return its file listing HTML.
-	 * Required before uploadAction, which stores into whatever path was last set this way.
+	 * Point the wysiwyg storage session at a folder (root if $node is omitted)
+	 * and return its file listing HTML. Required before uploadAction/newFolder,
+	 * which act on whatever path was last set this way.
 	 *
+	 * @param string|null $node Encoded folder id (see idEncode()), null for the media/wysiwyg root
 	 * @return string Raw HTML response of the contents action (the file listing)
 	 * @throws MediarelayOpenmageClientException
 	 */
-	private function primeSession()
+	private function primeSession($node = null)
 	{
-		$html = $this->request('POST', '/admin/cms_wysiwyg_images/contents?type=image', array('form_key' => $this->formKey));
+		$path = '/admin/cms_wysiwyg_images/contents?type=image';
+		if ($node !== null) {
+			$path .= '&node='.rawurlencode($node);
+		}
+
+		$html = $this->request('POST', $path, array('form_key' => $this->formKey));
 
 		$decoded = json_decode($html, true);
 		if (is_array($decoded) && !empty($decoded['error'])) {
 			throw new MediarelayOpenmageClientException('OpenMage contents call failed: '.$decoded['message']);
 		}
-
-		$this->primed = true;
 
 		return $html;
 	}

@@ -32,6 +32,9 @@ Accueil > Configuration > Modules > MediaRelay :
   d'un compte admin OpenMage **dédié** à cette intégration, jamais le
   compte principal. Le mot de passe est chiffré en base automatiquement
   (mécanisme standard Dolibarr pour les constantes `..._PASSWORD`).
+- **MEDIARELAY_ADMIN_FOLDER** : sous-dossier de `media/wysiwyg/` où stocker
+  les images (`uploads` par défaut), créé automatiquement s'il n'existe pas
+  encore. Laisser vide pour utiliser directement la racine `media/wysiwyg/`.
 
 ## Points fragiles / limites connues
 

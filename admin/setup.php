@@ -87,6 +87,12 @@ $item->defaultFieldValue = '';
 $item->cssClass = 'minwidth300';
 $item->setAsGenericPassword();
 
+// Subfolder of media/wysiwyg/ where images are stored (created automatically
+// if missing). Leave empty to use the media/wysiwyg root directly.
+$item = $formSetup->newItem('MEDIARELAY_ADMIN_FOLDER');
+$item->defaultFieldValue = 'uploads';
+$item->cssClass = 'minwidth200';
+
 $setupnotempty += count($formSetup->items);
 
 /*
