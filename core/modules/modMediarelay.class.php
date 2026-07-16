@@ -56,6 +56,7 @@ class modMediarelay extends DolibarrModules
 
 		// Possible values for version are: 'development', 'experimental', 'dolibarr', 'dolibarr_deprecated', 'experimental_deprecated' or a version string like 'x.y.z'
 		$this->version = '1.0.1';
+		
 
 		// Key used in llx_const table to save module status enabled/disabled (where MEDIARELAY is value of property name of module in uppercase)
 		$this->const_name = 'MAIN_MODULE_'.strtoupper($this->name);
@@ -126,6 +127,9 @@ class modMediarelay extends DolibarrModules
 
 		// Constants
 		$this->const = array();
+		// Disable CKEditor's Advanced Content Filter globally so <img> (and
+		// other tags) inserted through the editor are never stripped client-side.
+		$this->const[] = array('FCKEDITOR_ALLOW_ANY_CONTENT', 'chaine', '1', '', 0, 'current');
 
 		if (!isset($conf->mediarelay) || !isset($conf->mediarelay->enabled)) {
 			$conf->mediarelay = new stdClass();
