@@ -129,7 +129,8 @@ class modMediarelay extends DolibarrModules
 		$this->const = array();
 		// Disable CKEditor's Advanced Content Filter globally so <img> (and
 		// other tags) inserted through the editor are never stripped client-side.
-		$this->const[] = array('FCKEDITOR_ALLOW_ANY_CONTENT', 'chaine', '1', '', 0, 'current');
+		// Last array entry (1) = delete this constant when the module is disabled.
+		$this->const[] = array('FCKEDITOR_ALLOW_ANY_CONTENT', 'chaine', '1', '', 0, 'current', 1);
 
 		if (!isset($conf->mediarelay) || !isset($conf->mediarelay->enabled)) {
 			$conf->mediarelay = new stdClass();
