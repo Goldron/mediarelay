@@ -36,31 +36,6 @@ Home > Setup > Modules > MediaRelay:
   in (default `uploads`), created automatically if it doesn't exist yet.
   Leave empty to use the `media/wysiwyg/` root directly.
 
-## Known limitations
-
-- **Full admin account, not a scoped API account**: this is an OpenMage
-  constraint, not a design choice (see "Why" above).
-- **HTML parsing for the file listing**: the image list in "Browse server"
-  is scraped from OpenMage's admin HTML with a regular expression. It will
-  break if the OpenMage admin theme changes.
-- **No session reuse across requests**: every upload or "Browse server"
-  opening redoes a full admin login.
-- **Folder creation errors are not checked by message text**: OpenMage's
-  "folder already exists" error comes back localized (e.g. in French on
-  this store), so it can't be matched reliably. Creating the configured
-  folder is treated as best-effort and never blocks the upload/listing.
-- **Images could be stripped when reopening the product/service in edit
-  mode**, because Dolibarr's description editor runs with CKEditor's
-  Advanced Content Filter (ACF) on, and its `extraAllowedContent` list has
-  no rule for `<img>`. Fixed in `class/actions_mediarelay.class.php` by
-  extending that list and preserving the raw content across the editor
-  reinit (`destroy(true)`) — confirmed working. **Do not** "fix" this by
-  setting the global constant `FCKEDITOR_ALLOW_ANY_CONTENT` instead — it
-  disables ACF for every CKEditor field in Dolibarr, and TCPDF only embeds
-  locally-hosted images in invoice/quote PDFs (`core/lib/pdf.lib.php:1559`),
-  so a description image hosted on the OpenMage domain can break PDF
-  generation for that product. This was tried and reverted for that reason.
-
 ## Files
 
 | File | Role |

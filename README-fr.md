@@ -36,34 +36,6 @@ Accueil > Configuration > Modules > MediaRelay :
   les images (`uploads` par défaut), créé automatiquement s'il n'existe pas
   encore. Laisser vide pour utiliser directement la racine `media/wysiwyg/`.
 
-## Points fragiles / limites connues
-
-- **Compte admin complet, pas un compte API restreint** : contrainte
-  d'OpenMage, pas un choix de conception (voir "Pourquoi" ci-dessus).
-- **Parsing HTML pour le listing** : la liste des images du bouton
-  "Parcourir le serveur" est extraite du HTML admin d'OpenMage par
-  expression régulière. Ça cassera si le thème admin OpenMage change.
-- **Pas de session réutilisée entre requêtes** : chaque upload ou ouverture
-  du "Parcourir le serveur" refait une connexion admin complète.
-- **La création du dossier ne vérifie pas le texte des erreurs** : le
-  message d'erreur "le dossier existe déjà" d'OpenMage est renvoyé traduit
-  (en français sur cette boutique), donc impossible à matcher de façon
-  fiable. La création du dossier configuré est faite en best-effort et ne
-  bloque jamais l'upload ou le listing.
-- **L'image pouvait disparaître en rouvrant la fiche produit/service en
-  édition**, car l'éditeur de description tourne avec le filtre de contenu
-  avancé (ACF) de CKEditor actif, et sa liste `extraAllowedContent` n'a pas
-  de règle pour `<img>`. Corrigé dans `class/actions_mediarelay.class.php`
-  en étendant cette liste et en préservant le contenu brut lors de la
-  réinitialisation de l'éditeur (`destroy(true)`) — confirmé fonctionnel.
-  **Ne pas "corriger"** ça avec la constante globale
-  `FCKEDITOR_ALLOW_ANY_CONTENT` à la place — elle désactive l'ACF sur tous
-  les champs CKEditor de Dolibarr, et TCPDF n'intègre dans les PDF de
-  factures/devis que les images hébergées localement
-  (`core/lib/pdf.lib.php:1559`) : une image de description hébergée sur le
-  domaine OpenMage peut donc casser la génération du PDF pour ce produit.
-  Ça a été testé puis annulé pour cette raison.
-
 ## Fichiers
 
 | Fichier | Rôle |
