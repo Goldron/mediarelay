@@ -85,7 +85,13 @@ class ActionsMediarelay extends CommonHookActions
 				var extraAllowedContent = (oldConfig.extraAllowedContent ? oldConfig.extraAllowedContent + '; ' : '')
 					+ 'img[src,alt,title,width,height,style]';
 
-				ev.editor.destroy(false);
+				// noUpdate=true: don't let destroy() overwrite the underlying
+				// <textarea> with the editor's current data. That data already
+				// went through the original (img-less) filter on this first
+				// instanceReady, so writing it back would permanently strip any
+				// <img> from the saved content before the patched editor below
+				// even gets a chance to load it.
+				ev.editor.destroy(true);
 				CKEDITOR.replace('desc', $.extend({}, oldConfig, {
 					toolbar: newToolbar,
 					extraAllowedContent: extraAllowedContent,
