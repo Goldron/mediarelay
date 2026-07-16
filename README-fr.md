@@ -45,6 +45,11 @@ Accueil > Configuration > Modules > MediaRelay :
   expression régulière. Ça cassera si le thème admin OpenMage change.
 - **Pas de session réutilisée entre requêtes** : chaque upload ou ouverture
   du "Parcourir le serveur" refait une connexion admin complète.
+- **La création du dossier ne vérifie pas le texte des erreurs** : le
+  message d'erreur "le dossier existe déjà" d'OpenMage est renvoyé traduit
+  (en français sur cette boutique), donc impossible à matcher de façon
+  fiable. La création du dossier configuré est faite en best-effort et ne
+  bloque jamais l'upload ou le listing.
 
 ## Fichiers
 

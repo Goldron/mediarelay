@@ -45,6 +45,10 @@ Home > Setup > Modules > MediaRelay:
   break if the OpenMage admin theme changes.
 - **No session reuse across requests**: every upload or "Browse server"
   opening redoes a full admin login.
+- **Folder creation errors are not checked by message text**: OpenMage's
+  "folder already exists" error comes back localized (e.g. in French on
+  this store), so it can't be matched reliably. Creating the configured
+  folder is treated as best-effort and never blocks the upload/listing.
 
 ## Files
 
