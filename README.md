@@ -49,14 +49,14 @@ Home > Setup > Modules > MediaRelay:
   "folder already exists" error comes back localized (e.g. in French on
   this store), so it can't be matched reliably. Creating the configured
   folder is treated as best-effort and never blocks the upload/listing.
-- **Images can be stripped when reopening the product/service in edit
-  mode.** Dolibarr's description editor runs with CKEditor's Advanced
-  Content Filter (ACF) on, and its `extraAllowedContent` list has no rule
-  for `<img>` (see `class/actions_mediarelay.class.php`, which tries to
-  extend that list and preserve the raw content across the editor
-  reinit). This is not confirmed reliable yet. **Do not** "fix" it by
-  setting the global constant `FCKEDITOR_ALLOW_ANY_CONTENT` — it disables
-  ACF for every CKEditor field in Dolibarr, and TCPDF only embeds
+- **Images could be stripped when reopening the product/service in edit
+  mode**, because Dolibarr's description editor runs with CKEditor's
+  Advanced Content Filter (ACF) on, and its `extraAllowedContent` list has
+  no rule for `<img>`. Fixed in `class/actions_mediarelay.class.php` by
+  extending that list and preserving the raw content across the editor
+  reinit (`destroy(true)`) — confirmed working. **Do not** "fix" this by
+  setting the global constant `FCKEDITOR_ALLOW_ANY_CONTENT` instead — it
+  disables ACF for every CKEditor field in Dolibarr, and TCPDF only embeds
   locally-hosted images in invoice/quote PDFs (`core/lib/pdf.lib.php:1559`),
   so a description image hosted on the OpenMage domain can break PDF
   generation for that product. This was tried and reverted for that reason.

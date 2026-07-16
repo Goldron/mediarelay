@@ -50,19 +50,19 @@ Accueil > Configuration > Modules > MediaRelay :
   (en français sur cette boutique), donc impossible à matcher de façon
   fiable. La création du dossier configuré est faite en best-effort et ne
   bloque jamais l'upload ou le listing.
-- **L'image peut disparaître en rouvrant la fiche produit/service en
-  édition.** L'éditeur de description tourne avec le filtre de contenu
+- **L'image pouvait disparaître en rouvrant la fiche produit/service en
+  édition**, car l'éditeur de description tourne avec le filtre de contenu
   avancé (ACF) de CKEditor actif, et sa liste `extraAllowedContent` n'a pas
-  de règle pour `<img>` (voir `class/actions_mediarelay.class.php`, qui
-  essaie d'étendre cette liste et de préserver le contenu brut lors de la
-  réinitialisation de l'éditeur). Ce n'est pas confirmé fiable pour
-  l'instant. **Ne pas "corriger"** ça avec la constante globale
-  `FCKEDITOR_ALLOW_ANY_CONTENT` — elle désactive l'ACF sur tous les champs
-  CKEditor de Dolibarr, et TCPDF n'intègre dans les PDF de factures/devis
-  que les images hébergées localement (`core/lib/pdf.lib.php:1559`) : une
-  image de description hébergée sur le domaine OpenMage peut donc casser
-  la génération du PDF pour ce produit. Ça a été testé puis annulé pour
-  cette raison.
+  de règle pour `<img>`. Corrigé dans `class/actions_mediarelay.class.php`
+  en étendant cette liste et en préservant le contenu brut lors de la
+  réinitialisation de l'éditeur (`destroy(true)`) — confirmé fonctionnel.
+  **Ne pas "corriger"** ça avec la constante globale
+  `FCKEDITOR_ALLOW_ANY_CONTENT` à la place — elle désactive l'ACF sur tous
+  les champs CKEditor de Dolibarr, et TCPDF n'intègre dans les PDF de
+  factures/devis que les images hébergées localement
+  (`core/lib/pdf.lib.php:1559`) : une image de description hébergée sur le
+  domaine OpenMage peut donc casser la génération du PDF pour ce produit.
+  Ça a été testé puis annulé pour cette raison.
 
 ## Fichiers
 
