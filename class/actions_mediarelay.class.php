@@ -76,9 +76,19 @@ class ActionsMediarelay extends CommonHookActions
 					['Source']
 				];
 
+				// Dolibarr's 'dolibarr_details' toolbar has no Image button, so its
+				// extraAllowedContent (set with allowedContent: false, i.e. the
+				// Advanced Content Filter is on) never whitelists <img>. Without
+				// this, the ACF strips the tag right after insertion, before the
+				// field is even saved. Extend the existing rule instead of
+				// replacing it, so nothing else that was already allowed is lost.
+				var extraAllowedContent = (oldConfig.extraAllowedContent ? oldConfig.extraAllowedContent + '; ' : '')
+					+ 'img[src,alt,title,width,height,style]';
+
 				ev.editor.destroy(false);
 				CKEDITOR.replace('desc', $.extend({}, oldConfig, {
 					toolbar: newToolbar,
+					extraAllowedContent: extraAllowedContent,
 					// "Parcourir" tab in the Image dialog: now lists files from
 					// our remote server instead of Dolibarr's local ECM browser.
 					filebrowserImageBrowseUrl: mediarelayBrowseUrl,
