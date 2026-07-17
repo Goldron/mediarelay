@@ -46,3 +46,15 @@ Home > Setup > Modules > MediaRelay:
 | `browser.php` | "Browse server" popup. |
 | `lib/mediarelay.openmageclient.class.php` | Client driving the OpenMage backend. |
 | `admin/setup.php`, `admin/about.php` | Setup and "About" pages. |
+
+---
+
+<p align="center">
+  <a href="https://www.siladel.fr">
+    <img src=".github/images/siladel_black.png" alt="SILADEL" height="40">
+  </a>
+</p>
+
+<p align="center">
+  Developed by <a href="https://www.siladel.fr">SILADEL</a> — Author: IGREJA David
+</p>
