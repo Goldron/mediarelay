@@ -49,6 +49,16 @@ class MediarelayOpenmageClient
 	private $folder;
 
 	/**
+	 * @var string Cloudflare Access service token Client Id, '' if Cloudflare Access is not in front of this store
+	 */
+	private $cfAccessClientId;
+
+	/**
+	 * @var string Cloudflare Access service token Client Secret, '' if Cloudflare Access is not in front of this store
+	 */
+	private $cfAccessClientSecret;
+
+	/**
 	 * @var resource|\CurlHandle|null Shared curl handle (keeps the session cookie across calls)
 	 */
 	private $ch;
@@ -71,17 +81,36 @@ class MediarelayOpenmageClient
 	/**
 	 * Constructor
 	 *
-	 * @param string $baseUrl  OpenMage store base URL (e.g. https://shop.example.com)
-	 * @param string $username Dedicated admin backend username
-	 * @param string $password Dedicated admin backend password
-	 * @param string $folder   Subfolder of media/wysiwyg/ to use (e.g. "uploads"), '' for the root
+	 * @param string $baseUrl              OpenMage store base URL (e.g. https://shop.example.com)
+	 * @param string $username             Dedicated admin backend username
+	 * @param string $password             Dedicated admin backend password
+	 * @param string $folder               Subfolder of media/wysiwyg/ to use (e.g. "uploads"), '' for the root
+	 * @param string $cfAccessClientId     Cloudflare Access service token Client Id, '' to skip sending it
+	 * @param string $cfAccessClientSecret Cloudflare Access service token Client Secret, '' to skip sending it
 	 */
-	public function __construct($baseUrl, $username, $password, $folder = '')
+	public function __construct($baseUrl, $username, $password, $folder = '', $cfAccessClientId = '', $cfAccessClientSecret = '')
 	{
 		$this->baseUrl = rtrim($baseUrl, '/');
 		$this->username = $username;
 		$this->password = $password;
 		$this->folder = trim($folder, '/');
+		$this->cfAccessClientId = $cfAccessClientId;
+		$this->cfAccessClientSecret = $cfAccessClientSecret;
+	}
+
+	/**
+	 * Log in and make sure the configured folder is reachable, without
+	 * uploading or listing anything. Used by the "Test connection" button on
+	 * the setup page: exercises the exact same path (login, then folder
+	 * creation/priming) as a real upload, so it also catches a misconfigured
+	 * MEDIARELAY_ADMIN_FOLDER, not just bad URL/credentials.
+	 *
+	 * @return void
+	 * @throws MediarelayOpenmageClientException
+	 */
+	public function testConnection()
+	{
+		$this->ensureReady();
 	}
 
 	/**
@@ -106,8 +135,15 @@ class MediarelayOpenmageClient
 		$result = json_decode($response, true);
 
 		if (!is_array($result) || !empty($result['error']) || empty($result['file'])) {
-			$message = is_array($result) && !empty($result['error']) ? $result['error'] : 'Unexpected upload response';
-			throw new MediarelayOpenmageClientException('OpenMage upload failed: '.$message);
+			global $langs;
+			// $result['error'] is raw data from OpenMage (safe as a trans() %s param), but the
+			// "unexpected response" fallback is itself a trans() result: concatenate that one
+			// instead of nesting it as a param, or its own htmlentities() encoding gets encoded
+			// a second time by the outer trans() call.
+			if (is_array($result) && !empty($result['error'])) {
+				throw new MediarelayOpenmageClientException($langs->trans('MediaRelayErrorUploadFailed', $result['error']));
+			}
+			throw new MediarelayOpenmageClientException($langs->trans('MediaRelayErrorUploadFailedPrefix').' '.$langs->trans('MediaRelayErrorUnexpectedUploadResponse'));
 		}
 
 		return $this->baseUrl.'/media/wysiwyg/'.$this->urlPathPrefix().rawurlencode($result['file']);
@@ -191,9 +227,11 @@ class MediarelayOpenmageClient
 	 * existing (expected on every call after the first), and OpenMage's
 	 * error message for that is localized (e.g. French "Il existe déjà un
 	 * répertoire portant le même nom."), so it can't be matched reliably by
-	 * text. Any other real problem (invalid name, permissions) will surface
-	 * on its own when primeSession() below fails to actually enter the
-	 * folder and silently falls back to the media/wysiwyg root.
+	 * text and is logged as a warning rather than an error either way. Any
+	 * other real problem (invalid name, permissions) will surface on its
+	 * own when primeSession() below fails to actually enter the folder and
+	 * silently falls back to the media/wysiwyg root - the warning logged
+	 * here is the only trace of that.
 	 *
 	 * @return void
 	 */
@@ -210,7 +248,7 @@ class MediarelayOpenmageClient
 		$result = json_decode($response, true);
 
 		if (is_array($result) && !empty($result['error'])) {
-			dol_syslog('mediarelay: OpenMage newFolder for "'.$this->folder.'" reported: '.(string) ($result['message'] ?? ''), LOG_DEBUG);
+			dol_syslog('mediarelay: OpenMage newFolder for "'.$this->folder.'" on '.$this->baseUrl.' reported: '.(string) ($result['message'] ?? '').' (harmless if the folder already exists, otherwise it may not be reachable - check MEDIARELAY_ADMIN_FOLDER and the account permissions)', LOG_WARNING);
 		}
 	}
 
@@ -241,7 +279,9 @@ class MediarelayOpenmageClient
 		$loginPage = $this->request('GET', '/admin/');
 
 		if (!preg_match('/name="form_key"\s+type="hidden"\s+value="([^"]+)"/', $loginPage, $mKey)) {
-			throw new MediarelayOpenmageClientException('Unable to find form_key on OpenMage admin login page');
+			dol_syslog('mediarelay: no form_key found on OpenMage admin login page at '.$this->baseUrl.' (check MEDIARELAY_ADMIN_URL, or the store may be unreachable/down)', LOG_ERR);
+			global $langs;
+			throw new MediarelayOpenmageClientException($langs->trans('MediaRelayErrorNoFormKey'));
 		}
 		$formKey = $mKey[1];
 
@@ -262,7 +302,9 @@ class MediarelayOpenmageClient
 		// an authenticated page before doing anything else.
 		$check = $this->request('GET', '/admin/cms_wysiwyg_images/index?type=image');
 		if (strpos($check, 'login[username]') !== false) {
-			throw new MediarelayOpenmageClientException('OpenMage admin login failed (check MEDIARELAY_ADMIN_USER/PASSWORD)');
+			dol_syslog('mediarelay: OpenMage admin login rejected for user "'.$this->username.'" on '.$this->baseUrl.' (check MEDIARELAY_ADMIN_USER/PASSWORD)', LOG_ERR);
+			global $langs;
+			throw new MediarelayOpenmageClientException($langs->trans('MediaRelayErrorLoginFailed'));
 		}
 
 		if (preg_match('/name="form_key"\s+type="hidden"\s+value="([^"]+)"/', $check, $mKey2)) {
@@ -295,7 +337,8 @@ class MediarelayOpenmageClient
 
 		$decoded = json_decode($html, true);
 		if (is_array($decoded) && !empty($decoded['error'])) {
-			throw new MediarelayOpenmageClientException('OpenMage contents call failed: '.$decoded['message']);
+			global $langs;
+			throw new MediarelayOpenmageClientException($langs->trans('MediaRelayErrorContentsFailed', $decoded['message']));
 		}
 
 		return $html;
@@ -335,6 +378,18 @@ class MediarelayOpenmageClient
 				CURLOPT_TIMEOUT => 30,
 				CURLOPT_SSL_VERIFYPEER => true,
 			));
+
+			// Cloudflare Access service token: bypasses the interactive SSO login
+			// that would otherwise intercept every request (including this one)
+			// before it ever reaches OpenMage. Sent on every request for the
+			// lifetime of this handle, not just the login, since Access checks
+			// each one independently.
+			if ($this->cfAccessClientId !== '' && $this->cfAccessClientSecret !== '') {
+				curl_setopt($this->ch, CURLOPT_HTTPHEADER, array(
+					'CF-Access-Client-Id: '.$this->cfAccessClientId,
+					'CF-Access-Client-Secret: '.$this->cfAccessClientSecret,
+				));
+			}
 		}
 
 		curl_setopt($this->ch, CURLOPT_URL, $url);
@@ -351,11 +406,14 @@ class MediarelayOpenmageClient
 		$curlErr = curl_error($this->ch);
 
 		if ($response === false) {
-			throw new MediarelayOpenmageClientException('OpenMage request failed: '.$curlErr);
+			dol_syslog('mediarelay: OpenMage request to '.$url.' failed: '.$curlErr, LOG_ERR);
+			global $langs;
+			throw new MediarelayOpenmageClientException($langs->trans('MediaRelayErrorRequestFailed', $curlErr));
 		}
 		if ($httpCode >= 400) {
 			dol_syslog('mediarelay: OpenMage request to '.$url.' returned HTTP '.$httpCode, LOG_ERR);
-			throw new MediarelayOpenmageClientException('OpenMage request to '.$url.' returned HTTP '.$httpCode);
+			global $langs;
+			throw new MediarelayOpenmageClientException($langs->trans('MediaRelayErrorHttpCode', $url, (string) $httpCode));
 		}
 
 		return $response;

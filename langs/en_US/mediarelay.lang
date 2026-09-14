@@ -26,6 +26,42 @@ MEDIARELAY_ADMIN_PASSWORD = OpenMage admin password
 MEDIARELAY_ADMIN_PASSWORDTooltip = Password of the account above. Automatically encrypted at rest by Dolibarr.
 MEDIARELAY_ADMIN_FOLDER = Storage folder
 MEDIARELAY_ADMIN_FOLDERTooltip = Subfolder of media/wysiwyg/ to store images in (created automatically if missing). Leave empty to use the media/wysiwyg root.
+MEDIARELAY_CLOUDFLARE_ENABLED = Store protected by Cloudflare Access
+MEDIARELAY_CLOUDFLARE_ENABLEDTooltip = Enable if the store's /admin/ is protected by Cloudflare Access (Zero Trust): without this, every connection attempt is intercepted by Cloudflare's own login screen before it ever reaches OpenMage.
+MEDIARELAY_CLOUDFLARE_CLIENT_ID = Cloudflare Access Client Id
+MEDIARELAY_CLOUDFLARE_CLIENT_IDTooltip = Client Id of the Cloudflare Access Service Token dedicated to this integration (Zero Trust > Access > Service Auth).
+MEDIARELAY_CLOUDFLARE_CLIENT_SECRET = Cloudflare Access Client Secret
+MEDIARELAY_CLOUDFLARE_CLIENT_SECRETTooltip = Client Secret of the Service Token above. Automatically encrypted at rest by Dolibarr.
+MediaRelayTestConnectionOK = Connection to OpenMage succeeded (logged in as "%s").
+MediaRelayCloudflareAccessStatus = Cloudflare Access:
+MediaRelayTestConnectionKOPrefix = Connection failed:
+MediaRelayErrorNoFormKey = Invalid OpenMage login page (form_key not found). Check MEDIARELAY_ADMIN_URL, or whether Cloudflare Access protects /admin/ without the module being configured to get past it.
+MediaRelayErrorLoginFailed = Login rejected by OpenMage. Check MEDIARELAY_ADMIN_USER and MEDIARELAY_ADMIN_PASSWORD.
+MediaRelayErrorRequestFailed = Request to OpenMage failed: %s
+MediaRelayErrorHttpCode = Request to %s returned HTTP code %s
+MediaRelayErrorContentsFailed = Failed to read the OpenMage folder contents: %s
+MediaRelayErrorUploadFailed = Upload to OpenMage failed: %s
+MediaRelayErrorUploadFailedPrefix = Upload to OpenMage failed:
+MediaRelayErrorUnexpectedUploadResponse = Unexpected response from OpenMage
 MediaRelayBrowserTitle = Store images
 MediaRelayListNotConfigured = Connection to OpenMage not configured yet (Setup > Modules > MediaRelay).
 MediaRelayNoFile = No image found in media/wysiwyg on the store.
+
+#
+# Fix encoding page
+#
+MediaRelayFixEncoding = Fix encoding
+MediaRelayFixEncodingIntro = Detects product/service descriptions whose text got UTF-8 encoded twice (e.g. "pensÃ©" showing up instead of "pensé") - typically a leftover from importing content out of an older system, unrelated to MediaRelay's normal operation (it never touches the description's text, only images). Nothing is changed until you click "Fix selection" below.
+MediaRelayFixEncodingNoIssue = No encoding issue detected.
+MediaRelayFixEncodingIssuesFound = %s encoding issue(s) detected. Review the before/after preview for each row before applying.
+MediaRelayFixEncodingTargetProduct = Product/service description
+MediaRelayFixEncodingTargetProductLang = Product/service description translation
+MediaRelayFixEncodingField = Field
+MediaRelayFixEncodingRecord = Record
+MediaRelayFixEncodingBefore = Before
+MediaRelayFixEncodingAfter = After (preview)
+MediaRelayFixEncodingApply = Fix selection
+MediaRelayFixEncodingConfirm = Confirm fixing the selected rows? This directly modifies the database.
+MediaRelayFixEncodingApplied = %s row(s) fixed.
+MediaRelayFixEncodingSkipped = %s row(s) skipped (already up to date, or changed since the scan).
+MediaRelayFixEncodingNothingSelected = No row selected.

@@ -55,7 +55,7 @@ class modMediarelay extends DolibarrModules
 		$this->editor_url = 'https://www.siladel.fr';
 
 		// Possible values for version are: 'development', 'experimental', 'dolibarr', 'dolibarr_deprecated', 'experimental_deprecated' or a version string like 'x.y.z'
-		$this->version = '1.0.1';
+		$this->version = '1.1.0';
 		
 
 		// Key used in llx_const table to save module status enabled/disabled (where MEDIARELAY is value of property name of module in uppercase)

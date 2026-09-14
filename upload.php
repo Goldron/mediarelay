@@ -21,12 +21,17 @@ if (!$res) {
 
 require_once __DIR__.'/lib/mediarelay.openmageclient.class.php';
 
+global $langs;
+$langs->loadLangs(array("mediarelay@mediarelay"));
+
 // --- Configuration --------------------------------------------------------
 // Réglable depuis Accueil > Configuration > Modules > MediaRelay
 $REMOTE_ADMIN_URL      = getDolGlobalString('MEDIARELAY_ADMIN_URL');
 $REMOTE_ADMIN_USER     = getDolGlobalString('MEDIARELAY_ADMIN_USER');
 $REMOTE_ADMIN_PASSWORD = getDolGlobalString('MEDIARELAY_ADMIN_PASSWORD');
 $REMOTE_ADMIN_FOLDER   = getDolGlobalString('MEDIARELAY_ADMIN_FOLDER');
+$CF_ACCESS_CLIENT_ID     = getDolGlobalInt('MEDIARELAY_CLOUDFLARE_ENABLED') ? getDolGlobalString('MEDIARELAY_CLOUDFLARE_CLIENT_ID') : '';
+$CF_ACCESS_CLIENT_SECRET = getDolGlobalInt('MEDIARELAY_CLOUDFLARE_ENABLED') ? getDolGlobalString('MEDIARELAY_CLOUDFLARE_CLIENT_SECRET') : '';
 $MAX_SIZE              = 10 * 1024 * 1024; // 10 Mo
 $ALLOWED_MIMES         = array('image/jpeg', 'image/png', 'image/gif', 'image/webp');
 // ---------------------------------------------------------------------------
@@ -112,7 +117,7 @@ $finalName = $safeName.'-'.dol_print_date(dol_now(), '%Y%m%d%H%M%S').'-'.substr(
 // --- Envoi vers OpenMage ------------------------------------------
 
 try {
-	$client = new MediarelayOpenmageClient($REMOTE_ADMIN_URL, $REMOTE_ADMIN_USER, $REMOTE_ADMIN_PASSWORD, $REMOTE_ADMIN_FOLDER);
+	$client = new MediarelayOpenmageClient($REMOTE_ADMIN_URL, $REMOTE_ADMIN_USER, $REMOTE_ADMIN_PASSWORD, $REMOTE_ADMIN_FOLDER, $CF_ACCESS_CLIENT_ID, $CF_ACCESS_CLIENT_SECRET);
 	$publicUrl = $client->uploadImage($file['tmp_name'], $finalName, $mime);
 } catch (MediarelayOpenmageClientException $e) {
 	dol_syslog('mediarelay/upload.php: '.$e->getMessage(), LOG_ERR);

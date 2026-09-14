@@ -40,6 +40,7 @@ global $langs, $user;
 // Libraries
 require_once DOL_DOCUMENT_ROOT."/core/lib/admin.lib.php";
 require_once '../lib/mediarelay.lib.php';
+require_once '../lib/mediarelay.openmageclient.class.php';
 
 // Translations
 $langs->loadLangs(array("admin", "mediarelay@mediarelay"));
@@ -93,6 +94,22 @@ $item = $formSetup->newItem('MEDIARELAY_ADMIN_FOLDER');
 $item->defaultFieldValue = 'uploads';
 $item->cssClass = 'minwidth200';
 
+// Cloudflare Access service token, only needed when the store's /admin/ is
+// gated by Cloudflare Access (Zero Trust): without it, every request is
+// intercepted by Access' own SSO login before it ever reaches OpenMage.
+$item = $formSetup->newItem('MEDIARELAY_CLOUDFLARE_ENABLED');
+$item->defaultFieldValue = '0';
+$item->setAsYesNo();
+
+$item = $formSetup->newItem('MEDIARELAY_CLOUDFLARE_CLIENT_ID');
+$item->defaultFieldValue = '';
+$item->cssClass = 'minwidth300';
+
+$item = $formSetup->newItem('MEDIARELAY_CLOUDFLARE_CLIENT_SECRET');
+$item->defaultFieldValue = '';
+$item->cssClass = 'minwidth300';
+$item->setAsGenericPassword();
+
 $setupnotempty += count($formSetup->items);
 
 /*
@@ -128,11 +145,60 @@ echo '<span class="opacitymedium">'.$langs->trans("MediaRelaySetupPage").'</span
 if ($action == 'edit') {
 	print $formSetup->generateOutput(true);
 	print '<br>';
+	// FormSetup's password/genericpassword widget hardcodes required="required"
+	// on its <input> with no way to opt out (see generateInputFieldPassword()
+	// in html.formsetup.class.php). MEDIARELAY_CLOUDFLARE_CLIENT_SECRET is
+	// optional (only used when MEDIARELAY_CLOUDFLARE_ENABLED is on), and that
+	// attribute would otherwise block saving the whole page - not just this
+	// field - whenever it's left empty.
+	?>
+	<script nonce="<?php echo getNonce(); ?>">
+	document.getElementById('MEDIARELAY_CLOUDFLARE_CLIENT_SECRET')?.removeAttribute('required');
+	</script>
+	<?php
 } elseif (!empty($formSetup->items)) {
 	print $formSetup->generateOutput();
 	print '<div class="tabsAction">';
 	print '<a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=edit&token='.newToken().'">'.$langs->trans("Modify").'</a>';
+	if (getDolGlobalString('MEDIARELAY_ADMIN_URL') && getDolGlobalString('MEDIARELAY_ADMIN_USER') && getDolGlobalString('MEDIARELAY_ADMIN_PASSWORD')) {
+		print '<a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=testconnection&token='.newToken().'">'.$langs->trans("TestConnection").'</a>';
+	}
 	print '</div>';
+
+	// Test the connection with the currently saved settings (login, then
+	// folder creation/priming) - same code path a real upload goes through,
+	// with or without Cloudflare Access depending on MEDIARELAY_CLOUDFLARE_ENABLED.
+	if ($action == 'testconnection') {
+		print '<br>';
+		$cfEnabled = getDolGlobalInt('MEDIARELAY_CLOUDFLARE_ENABLED');
+		try {
+			$client = new MediarelayOpenmageClient(
+				getDolGlobalString('MEDIARELAY_ADMIN_URL'),
+				getDolGlobalString('MEDIARELAY_ADMIN_USER'),
+				getDolGlobalString('MEDIARELAY_ADMIN_PASSWORD'),
+				getDolGlobalString('MEDIARELAY_ADMIN_FOLDER'),
+				$cfEnabled ? getDolGlobalString('MEDIARELAY_CLOUDFLARE_CLIENT_ID') : '',
+				$cfEnabled ? getDolGlobalString('MEDIARELAY_CLOUDFLARE_CLIENT_SECRET') : ''
+			);
+			$client->testConnection();
+
+			// Cloudflare Access status is appended as plain concatenation, not
+			// as a %s param: trans() already runs its whole result (including
+			// substituted params) through htmlentities(), so feeding it the
+			// result of another trans() call (Yes/No) would encode that inner
+			// result a second time (e.g. accented chars turning into literal
+			// "&eacute;" instead of being decoded by the browser).
+			print img_picto('', 'info').' ';
+			print '<span class="ok">'.$langs->trans("MediaRelayTestConnectionOK", getDolGlobalString('MEDIARELAY_ADMIN_USER')).' '.$langs->trans("MediaRelayCloudflareAccessStatus").' '.($cfEnabled ? $langs->trans("Yes") : $langs->trans("No")).'</span>';
+		} catch (MediarelayOpenmageClientException $e) {
+			// Same reason: $e->getMessage() already went through trans() once
+			// (inside the client class), so it must be concatenated here, not
+			// passed as a %s param to another trans() call.
+			print img_picto('', 'error').' ';
+			print '<span class="error">'.$langs->trans("MediaRelayTestConnectionKOPrefix").' '.$e->getMessage().'</span>';
+		}
+		print '<br>';
+	}
 } else {
 	print '<br>'.$langs->trans("NothingToSetup");
 }

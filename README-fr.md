@@ -35,6 +35,33 @@ Accueil > Configuration > Modules > MediaRelay :
 - **MEDIARELAY_ADMIN_FOLDER** : sous-dossier de `media/wysiwyg/` où stocker
   les images (`uploads` par défaut), créé automatiquement s'il n'existe pas
   encore. Laisser vide pour utiliser directement la racine `media/wysiwyg/`.
+- **MEDIARELAY_CLOUDFLARE_ENABLED** / **MEDIARELAY_CLOUDFLARE_CLIENT_ID** /
+  **MEDIARELAY_CLOUDFLARE_CLIENT_SECRET** : nécessaire uniquement si `/admin/`
+  de la boutique est protégé par Cloudflare Access (Zero Trust). Sans jeton
+  de service, chaque requête est interceptée par l'écran de connexion SSO de
+  Cloudflare avant même d'atteindre OpenMage, et le module ne peut pas du
+  tout se connecter. Créer un Service Token dédié dans Zero Trust > Access >
+  Service Auth et renseigner son Client Id/Secret ici. Le secret est chiffré
+  en base de la même façon que MEDIARELAY_ADMIN_PASSWORD.
+
+Une fois l'URL, l'identifiant et le mot de passe enregistrés, un bouton
+**Tester la connexion** apparaît : il se connecte et vérifie l'accès au
+dossier de stockage configuré exactement comme le ferait un vrai envoi
+d'image (Cloudflare Access compris, si activé), puis affiche le résultat ou
+la raison précise de l'échec — pratique pour valider la configuration sans
+passer par une fiche produit.
+
+## Corriger l'encodage d'anciennes descriptions
+
+Accueil > Configuration > Modules > MediaRelay > onglet **Corriger
+l'encodage** : détecte les descriptions produit/service dont le texte a été
+encodé deux fois en UTF-8 (ex : `pensÃ©` au lieu de `pensé`) — typiquement un
+reste d'un import depuis un ancien système utilisant un éditeur/encodage
+différent. Cet outil n'a aucun rapport avec le fonctionnement normal du
+module (qui ne touche jamais au texte de la description, seulement aux
+images) : c'est une correction ponctuelle des données existantes. Chaque
+ligne détectée s'affiche avec un aperçu avant/après ; rien n'est modifié
+avant validation explicite.
 
 ## Fichiers
 
@@ -45,7 +72,8 @@ Accueil > Configuration > Modules > MediaRelay :
 | `upload.php` | Reçoit les images envoyées et les relaie à OpenMage. |
 | `browser.php` | Popup "Parcourir le serveur". |
 | `lib/mediarelay.openmageclient.class.php` | Client qui pilote le back-office OpenMage. |
-| `admin/setup.php`, `admin/about.php` | Pages de configuration et "À propos". |
+| `lib/mediarelay.lib.php` | Onglets admin + détection/correction de l'encodage double UTF-8. |
+| `admin/setup.php`, `admin/fix_encoding.php`, `admin/about.php` | Pages de configuration, correction d'encodage et "À propos". |
 
 ---
 

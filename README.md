@@ -35,6 +35,31 @@ Home > Setup > Modules > MediaRelay:
 - **MEDIARELAY_ADMIN_FOLDER**: subfolder of `media/wysiwyg/` to store images
   in (default `uploads`), created automatically if it doesn't exist yet.
   Leave empty to use the `media/wysiwyg/` root directly.
+- **MEDIARELAY_CLOUDFLARE_ENABLED** / **MEDIARELAY_CLOUDFLARE_CLIENT_ID** /
+  **MEDIARELAY_CLOUDFLARE_CLIENT_SECRET**: only needed if the store's
+  `/admin/` is gated by Cloudflare Access (Zero Trust). Without a service
+  token, every request is intercepted by Cloudflare's own SSO login before
+  it ever reaches OpenMage, and the module can't log in at all. Create a
+  dedicated Service Token in Zero Trust > Access > Service Auth and enter
+  its Client Id/Secret here. The secret is encrypted at rest the same way
+  as MEDIARELAY_ADMIN_PASSWORD.
+
+Once the URL, username and password are saved, a **Test connection** button
+appears: it logs in and reaches the configured storage folder exactly like a
+real upload would (Cloudflare Access included, if enabled), and reports
+success or the precise failure reason - useful to validate the setup without
+having to try it from a product card.
+
+## Fixing the encoding of older descriptions
+
+Home > Setup > Modules > MediaRelay > **Fix encoding** tab: detects
+product/service descriptions whose text got UTF-8 encoded twice (e.g.
+`pensÃ©` instead of `pensé`) - typically a leftover from importing content
+out of an older system that used a different editor/charset. This tool is
+unrelated to the module's normal operation (which never touches the
+description's text, only images): it's a one-off repair of existing data.
+Every detected row shows a before/after preview; nothing is changed until
+you explicitly apply the fix.
 
 ## Files
 
@@ -45,7 +70,8 @@ Home > Setup > Modules > MediaRelay:
 | `upload.php` | Receives sent images and relays them to OpenMage. |
 | `browser.php` | "Browse server" popup. |
 | `lib/mediarelay.openmageclient.class.php` | Client driving the OpenMage backend. |
-| `admin/setup.php`, `admin/about.php` | Setup and "About" pages. |
+| `lib/mediarelay.lib.php` | Admin tabs + double-UTF-8 encoding detection/repair. |
+| `admin/setup.php`, `admin/fix_encoding.php`, `admin/about.php` | Setup, encoding-fix and "About" pages. |
 
 ---
 
